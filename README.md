@@ -103,6 +103,13 @@ We have limited review capacity. Small, focused fixes are the most likely to be 
 - Build from source with the [development runbook](./docs/operations/00_development.md#first-checkout). The [architecture overview](./docs/internals/01_architecture.md) explains how it works.
 - Get help in [Discord](https://discord.gg/jn4EGJjrvv).
 
+## Contributors
+
+Fork maintainers and AI co-authors for [SiLeDeAnSha/t3code](https://github.com/SiLeDeAnSha/t3code):
+
+- [@SiLeDeAnSha](https://github.com/SiLeDeAnSha)
+- [Gemini](https://github.com/apps/gemini-code-assist) (`gemini-code-assist[bot]`) — AI co-author (Codex UI rework, build workflow, and release packaging)
+
 ## License
 
 The source code in this repository is licensed under the [MIT License](./LICENSE).
