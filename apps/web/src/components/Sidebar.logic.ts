@@ -215,6 +215,7 @@ const SIDEBAR_MARKER_PREFIX = "sidebar-marker-";
 
 export type SidebarListMarker =
   | "pinned-header"
+  | "projects-section"
   | "active-placeholder"
   | "settled-placeholder"
   | "pinned-divider"
@@ -258,6 +259,7 @@ export function resolveSidebarDropTarget(
   activeKey: string,
   overId: string,
 ): SidebarDropTarget | null {
+  if (overId === sidebarMarkerId("projects-section")) return null;
   const activeIndex = items.findIndex((item) => sidebarListItemId(item) === activeKey);
   const overIndex = items.findIndex((item) => sidebarListItemId(item) === overId);
   if (activeIndex === -1 || overIndex === -1 || items[activeIndex]?.kind !== "thread") return null;

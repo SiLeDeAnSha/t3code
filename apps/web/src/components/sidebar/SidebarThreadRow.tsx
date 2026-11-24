@@ -591,6 +591,7 @@ type SidebarThreadRowProps = {
   snoozeSupported: boolean;
   pinningSupported: boolean;
   isPinned: boolean;
+  hideRestingPinIcon?: boolean | undefined;
   sortable?: SortableThreadRowBag | undefined;
   dropVerb: SidebarDropVerb | null;
   dragOverPinned: boolean;
@@ -1223,7 +1224,27 @@ const SidebarThreadRow = memo(function SidebarThreadRow(props: SidebarThreadRowP
   const showPin =
     props.isPinned && (!sortable?.isDragging || (props.dragOverPinned && props.dropVerb === null));
   const pinIndicator = showPin ? (
-    props.pinningSupported && canOperateThread && !sortable?.isDragging ? (
+    props.hideRestingPinIcon ? (
+      props.pinningSupported && canOperateThread && !sortable?.isDragging ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                aria-label={gt("Unpin thread")}
+                onClick={handleUnpinClick}
+                className="hidden cursor-pointer items-center rounded-sm text-muted-foreground/65 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring group-hover/sidebar-row:inline-flex group-focus-within/sidebar-row:inline-flex"
+              />
+            }
+          >
+            <PinOffIcon aria-hidden className="size-3 shrink-0" />
+          </TooltipTrigger>
+          <TooltipPopup>
+            <T>Unpin thread</T>
+          </TooltipPopup>
+        </Tooltip>
+      ) : null
+    ) : props.pinningSupported && canOperateThread && !sortable?.isDragging ? (
       <Tooltip>
         <TooltipTrigger
           render={

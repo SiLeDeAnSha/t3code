@@ -31,6 +31,7 @@ import {
   sortScopedProjectsForSidebar,
   sortSidebarV2ProjectGroups,
   shouldNavigateAfterThreadPark,
+  sidebarMarkerId,
   type SidebarListItem,
   type SidebarListMarker,
   type SidebarSection,
@@ -1203,6 +1204,22 @@ describe("Working shelf (beta)", () => {
         activeOrder: ["a1", "a2", "p1"],
       });
       expect(resolveSidebarDropVerb("active", "working")).toBeNull();
+    });
+
+    it("never drops onto the inline projects section marker", () => {
+      const itemsWithProjects: readonly SidebarListItem[] = [
+        marker("pinned-header"),
+        row("p1", "pinned"),
+        marker("projects-section"),
+        marker("pinned-divider"),
+        row("a1", "active"),
+      ];
+      expect(
+        resolveSidebarDropTarget(itemsWithProjects, "p1", sidebarMarkerId("projects-section")),
+      ).toBeNull();
+      expect(
+        resolveSidebarDropTarget(itemsWithProjects, "a1", sidebarMarkerId("projects-section")),
+      ).toBeNull();
     });
 
     it.each([

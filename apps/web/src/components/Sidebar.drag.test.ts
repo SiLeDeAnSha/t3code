@@ -680,6 +680,54 @@ describe("sidebar drag projection", () => {
     expect(result.get(sidebarMarkerId("snoozed-header"))).toEqual({ ...stationary, y: 83 });
     expect(result.get(sidebarMarkerId("settled-header"))?.y).toBe(46);
   });
+
+  it("keeps the projects section between pinned and active rows and honors visible header heights", () => {
+    const projectsMarker = marker("projects-section");
+    const items = [
+      pinnedHeader,
+      thread("p", "pinned"),
+      projectsMarker,
+      divider,
+      thread("a", "active"),
+      settledHeader,
+      marker("settled-placeholder"),
+    ];
+    let top = 100;
+    const rects = items.map((item) => {
+      const height =
+        item.kind === "thread"
+          ? 32
+          : item.marker === "pinned-header" || item.marker === "pinned-divider"
+            ? 28
+            : item.marker === "projects-section"
+              ? 64
+              : item.marker === "settled-header"
+                ? 32
+                : 0;
+      const rect = { top, height, bottom: top + height, left: 0, right: 260, width: 260 };
+      top += height + 1;
+      return rect;
+    });
+    const strategy = createSidebarSortingStrategy({
+      items,
+      settledOrder: [],
+      settledExpanded: false,
+      boundaryLabelHeight: 24,
+    });
+    const args = {
+      activeIndex: 4,
+      overIndex: 1,
+      activeNodeRect: rects[4]!,
+      rects,
+      index: 0,
+    } satisfies Parameters<SortingStrategy>[0];
+    // Active thread dragged over pinned inserts before p and shifts p, projects-section, and divider down by a + 1px.
+    // Preserving the 28px pinned-header height (instead of clamping to 24px) keeps the shift exact at 33px.
+    expect(strategy({ ...args, index: 0 })).toEqual({ ...stationary, y: 0 });
+    expect(strategy({ ...args, index: 1 })).toEqual({ ...stationary, y: 33 });
+    expect(strategy({ ...args, index: 2 })).toEqual({ ...stationary, y: 33 });
+    expect(strategy({ ...args, index: 3 })).toEqual({ ...stationary, y: 33 });
+  });
 });
 
 describe("lifted card clearance", () => {

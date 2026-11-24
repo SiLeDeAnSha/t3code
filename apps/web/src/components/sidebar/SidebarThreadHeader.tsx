@@ -97,7 +97,9 @@ export function SidebarThreadHeader({
             </Button>
           ) : null}
         </div>
-        <div className="flex shrink-0 items-center">{hasProjects ? projectScope : null}</div>
+        {hasProjects && projectScope ? (
+          <div className="flex shrink-0 items-center">{projectScope}</div>
+        ) : null}
       </div>
       <Tooltip>
         <TooltipTrigger

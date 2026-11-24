@@ -174,6 +174,9 @@ export function createSidebarSortingStrategy(input: {
     };
     marker("pinned-header");
     projected.push(...groups.pinned);
+    if (items.some((item) => item.kind === "marker" && item.marker === "projects-section")) {
+      marker("projects-section");
+    }
     marker("pinned-divider");
     section("active");
     if (items.some((item) => item.kind === "marker" && item.marker === "working-header")) {
@@ -201,7 +204,7 @@ export function createSidebarSortingStrategy(input: {
       const moved = item.kind === "thread" && item.key === active.key;
       return item.kind === "marker" &&
         (item.marker === "pinned-header" || item.marker === "pinned-divider")
-        ? labelHeight
+        ? Math.max(rect?.height ?? 0, labelHeight)
         : item.kind === "marker" && item.marker.endsWith("placeholder")
           ? slimHeight
           : moved

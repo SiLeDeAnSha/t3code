@@ -10,7 +10,7 @@ import {
 } from "../Sidebar.logic";
 import { SIDEBAR_SORTABLE_DRAG_DISABLED } from "./SidebarThreadRow";
 
-function SortableSidebarMarker(props: {
+export function SortableSidebarMarker(props: {
   marker: SidebarListMarker;
   className?: string;
   children?: ReactNode;
@@ -80,12 +80,47 @@ export function SidebarDragBoundary(props: {
   label: string;
   visible: boolean;
   isDropTarget: boolean;
+  showSectionLabel?: boolean;
+  className?: string | undefined;
 }) {
+  if (props.showSectionLabel) {
+    return (
+      <SortableSidebarMarker
+        marker={props.marker}
+        data-testid={`sidebar-${props.marker}`}
+        className={cn("relative mx-0.5", props.className)}
+      >
+        {props.visible ? (
+          <div className="sidebar-drag-boundary-label flex h-7 items-center gap-2 px-2">
+            <span
+              className={cn(
+                "shrink-0 text-xs font-medium",
+                props.isDropTarget ? "text-primary" : "text-sidebar-foreground/80",
+              )}
+            >
+              {props.label}
+            </span>
+            <span
+              aria-hidden
+              className={cn(
+                "h-px flex-1",
+                props.isDropTarget ? "bg-primary/50" : "bg-sidebar-foreground/25",
+              )}
+            />
+          </div>
+        ) : (
+          <div className="flex h-7 items-center px-2 text-xs font-medium text-sidebar-muted-foreground">
+            {props.label}
+          </div>
+        )}
+      </SortableSidebarMarker>
+    );
+  }
   return (
     <SortableSidebarMarker
       marker={props.marker}
       data-testid={`sidebar-${props.marker}`}
-      className="pointer-events-none relative mx-0.5 -mb-px h-0"
+      className={cn("pointer-events-none relative mx-0.5 -mb-px h-0", props.className)}
     >
       {props.visible ? (
         <div className="sidebar-drag-boundary-label absolute inset-x-2 top-1 flex h-4 items-center gap-2">

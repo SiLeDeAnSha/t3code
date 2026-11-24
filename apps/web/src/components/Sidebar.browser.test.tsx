@@ -22,13 +22,14 @@ import { DraftId, useComposerDraftStore } from "../composerDraftStore";
 import { makeThreadFixture } from "../test-fixtures";
 import { useHandleNewThread } from "../hooks/useHandleNewThread";
 import { useNowMinute } from "../hooks/useNowMinute";
-import { __setClientSettingsForTests, getClientSettings } from "../hooks/useSettings";
+import { getClientSettings, __setClientSettingsForTests } from "../hooks/useSettings";
 import { useThreadRouteTarget } from "../hooks/useThreadRouteTarget";
 import { useProjects, useServerConfigs, useQuietThreadShells } from "../state/entities";
 import { useConnectedEnvironmentIds, usePrimaryEnvironmentId } from "../state/environments";
 import { readEnvironmentScope, useEnvironmentScope } from "../state/session";
 import { useOrchestrationCommand } from "../state/use-orchestration-command";
 import { useTerminalUiStateStore } from "../terminalUiStateStore";
+import { useUiStateStore } from "../uiStateStore";
 import { readLocalApi } from "../localApi";
 import type { Project } from "../types";
 import Sidebar from "./Sidebar";
@@ -572,5 +573,106 @@ describe("sidebar settled pagination", () => {
     const loadedRows = screen.container.querySelectorAll("[data-thread-item]").length;
     await act(() => moreButton.click());
     expect(screen.container.querySelectorAll("[data-thread-item]")).toHaveLength(loadedRows);
+  });
+});
+
+describe("sidebar pinned, projects, and recent sections", () => {
+  it("renders Pinned, collapsible Projects, and Recent sections and filters by clicking projects", async () => {
+    using stack = new DisposableStack();
+    const previousSettings = getClientSettings();
+    const previousScopeKeys = useUiStateStore.getState().sidebarProjectScopeKeys;
+    const previousExpanded = localStorage.getItem("t3code:sidebar:projects-expanded");
+    stack.defer(() => {
+      __setClientSettingsForTests(previousSettings);
+      useUiStateStore.getState().setSidebarProjectScopeKeys(previousScopeKeys);
+      if (previousExpanded === null) localStorage.removeItem("t3code:sidebar:projects-expanded");
+      else localStorage.setItem("t3code:sidebar:projects-expanded", previousExpanded);
+    });
+    localStorage.removeItem("t3code:sidebar:projects-expanded");
+    useUiStateStore.getState().setSidebarProjectScopeKeys([]);
+    __setClientSettingsForTests({ ...DEFAULT_CLIENT_SETTINGS, boringSidebarEnabled: false });
+
+    const alpha = project("alpha");
+    const beta = project("beta");
+    const pinnedAlpha = {
+      ...makeThreadFixture({
+        environmentId: alpha.environmentId,
+        id: ThreadId.make("pinned-alpha"),
+        projectId: alpha.id,
+        title: "Pinned alpha thread",
+      }),
+      pinnedAt: "2026-01-01T00:00:00.000Z",
+    };
+    const recentAlpha = makeThreadFixture({
+      environmentId: alpha.environmentId,
+      id: ThreadId.make("recent-alpha"),
+      projectId: alpha.id,
+      title: "Recent alpha thread",
+    });
+    const recentBeta = makeThreadFixture({
+      environmentId: beta.environmentId,
+      id: ThreadId.make("recent-beta"),
+      projectId: beta.id,
+      title: "Recent beta thread",
+    });
+    vi.mocked(useProjects).mockReturnValue([alpha, beta]);
+    vi.mocked(useQuietThreadShells).mockReturnValue([pinnedAlpha, recentAlpha, recentBeta]);
+    const routeThreadRef = scopeThreadRef(alpha.environmentId, recentAlpha.id);
+    vi.mocked(useThreadRouteTarget).mockReturnValue({ kind: "server", threadRef: routeThreadRef });
+    vi.mocked(useHandleNewThread).mockReturnValue({
+      activeDraftThread: null,
+      activeThread: recentAlpha,
+      defaultProjectRef: scopeProjectRef(alpha.environmentId, alpha.id),
+      defaultProjectFallbackReady: true,
+      handleNewThread: vi.fn().mockResolvedValue(null),
+      routeDraftId: null,
+      routeThreadRef,
+    });
+    vi.mocked(openCommandPalette).mockClear();
+
+    await using screen = await render(
+      <SidebarProvider>
+        <Sidebar routeReveal={{ observedKey: null, pendingKey: null }} />
+      </SidebarProvider>,
+    );
+
+    await expect
+      .element(screen.getByTestId("sidebar-pinned-header").getByText("Pinned", { exact: true }))
+      .toBeVisible();
+    await expect
+      .element(screen.getByTestId("sidebar-pinned-divider").getByText("Recent", { exact: true }))
+      .toBeVisible();
+    const projectsSection = screen.getByTestId("sidebar-projects-section");
+    await expect.element(projectsSection).toBeVisible();
+    await expect.element(screen.getByText("Pinned alpha thread").first()).toBeVisible();
+    await expect.element(screen.getByText("Recent alpha thread").first()).toBeVisible();
+    await expect.element(screen.getByText("Recent beta thread").first()).toBeVisible();
+
+    const alphaRow = projectsSection.getByRole("button", { name: "alpha", exact: true });
+    await expect.element(alphaRow).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(alphaRow);
+
+    await expect.element(alphaRow).toHaveAttribute("aria-pressed", "true");
+    await expect.element(screen.getByText("Recent alpha thread").first()).toBeVisible();
+    await expect.element(screen.getByText("Recent beta thread")).not.toBeInTheDocument();
+
+    await userEvent.click(alphaRow);
+    await expect.element(alphaRow).toHaveAttribute("aria-pressed", "false");
+    await expect.element(screen.getByText("Recent beta thread").first()).toBeVisible();
+
+    const projectsToggle = screen.getByTestId("sidebar-projects-toggle");
+    await expect.element(projectsToggle).toHaveAttribute("aria-expanded", "true");
+    await userEvent.click(projectsToggle);
+    await expect.element(projectsToggle).toHaveAttribute("aria-expanded", "false");
+    await expect.element(screen.getByTestId("sidebar-project-row")).not.toBeInTheDocument();
+
+    await userEvent.click(projectsToggle);
+    await expect.element(projectsToggle).toHaveAttribute("aria-expanded", "true");
+    await expect.element(alphaRow).toBeVisible();
+
+    await userEvent.click(
+      projectsSection.getByRole("button", { name: "Add project", exact: true }),
+    );
+    expect(openCommandPalette).toHaveBeenCalledExactlyOnceWith({ open: "add-project" });
   });
 });
